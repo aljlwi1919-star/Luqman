@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>لوحة تحكم المدير</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#f5f6fa;color:#222;direction:rtl;}
+  header{background:#1a56a0;color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;}
+  header h1{font-size:19px;font-weight:600;}
+  header p{font-size:12px;opacity:.8;margin-top:2px;}
+  .logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:7px 18px;border-radius:7px;cursor:pointer;font-size:13px;font-family:inherit;}
+  .logout:hover{background:rgba(255,255,255,.25);}
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f6fa;}
+  .login-card{background:#fff;border-radius:14px;border:1px solid #e3e6ef;padding:36px 40px;width:360px;text-align:center;}
+  .login-card h2{font-size:18px;font-weight:600;color:#1a56a0;margin-bottom:6px;}
+  .login-card p{font-size:13px;color:#888;margin-bottom:24px;}
+  .login-card input{width:100%;padding:10px 14px;border-radius:8px;border:1px solid #d0d5e0;font-size:14px;font-family:inherit;direction:rtl;margin-bottom:12px;}
+  .login-card input:focus{outline:none;border-color:#1a56a0;}
+  .btn-blue{width:100%;padding:12px;border-radius:8px;border:none;background:#1a56a0;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .btn-blue:hover{opacity:.88;}
+  .err{color:#c0392b;font-size:13px;margin-top:8px;}
+  .container{max-width:900px;margin:32px auto;padding:0 16px;}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+  .stat{background:#fff;border-radius:12px;border:1px solid #e3e6ef;padding:18px 20px;text-align:center;}
+  .stat .num{font-size:28px;font-weight:700;color:#1a56a0;}
+  .stat .lbl{font-size:12px;color:#888;margin-top:3px;}
+  .card{background:#fff;border-radius:14px;border:1px solid #e3e6ef;padding:20px 24px;}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+  .card-header h2{font-size:16px;font-weight:600;}
+  .search-box{padding:8px 14px;border-radius:8px;border:1px solid #d0d5e0;font-size:13px;font-family:inherit;direction:rtl;width:220px;}
+  .search-box:focus{outline:none;border-color:#1a56a0;}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th{text-align:right;padding:10px 12px;font-size:12px;color:#888;font-weight:500;border-bottom:1px solid #eee;}
+  td{padding:12px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#f9fafc;}
+  .avatar{width:36px;height:36px;border-radius:50%;background:#ddeeff;color:#1a56a0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;}
+  .badge-new{background:#e8f0fe;color:#1a56a0;}
+  .badge-done{background:#edfaf4;color:#1a7a4a;}
+  .btn-dl{padding:6px 14px;border-radius:7px;border:1px solid #d0d5e0;background:transparent;cursor:pointer;font-size:12px;color:#444;font-family:inherit;transition:all .15s;}
+  .btn-dl:hover{background:#1a56a0;color:#fff;border-color:#1a56a0;}
+  .empty{text-align:center;padding:40px;color:#aaa;font-size:14px;}
+  .name-cell{display:flex;align-items:center;gap:10px;}
+  .refresh-btn{padding:7px 16px;border-radius:8px;border:1px solid #d0d5e0;background:transparent;cursor:pointer;font-size:13px;color:#555;font-family:inherit;}
+  .refresh-btn:hover{background:#f0f4fa;}
+  #main-app{display:none;}
+  #login-screen{display:flex;}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-wrap">
+  <div class="login-card">
+    <h2>لوحة تحكم المدير</h2>
+    <p>أدخل كلمة المرور للدخول</p>
+    <input type="password" id="pass-input" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')login()"/>
+    <button class="btn-blue" onclick="login()">دخول</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<div id="main-app">
+  <header>
+    <div>
+      <h1>لوحة تحكم المدير</h1>
+      <p>شواهد الأداء المرفوعة</p>
+    </div>
+    <button class="logout" onclick="logout()">خروج</button>
+  </header>
+  <div class="container">
+    <div class="stats">
+      <div class="stat"><div class="num" id="stat-total">0</div><div class="lbl">إجمالي الشواهد</div></div>
+      <div class="stat"><div class="num" id="stat-teachers">0</div><div class="lbl">معلم رفع</div></div>
+      <div class="stat"><div class="num" id="stat-today">0</div><div class="lbl">شواهد اليوم</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2>الشواهد المرفوعة</h2>
+        <div style="display:flex;gap:8px;">
+          <input type="text" class="search-box" id="search" placeholder="بحث بالاسم أو المادة..." oninput="renderTable()"/>
+          <button class="refresh-btn" onclick="loadData()">تحديث</button>
+        </div>
+      </div>
+      <div id="table-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://ozcfdvpptqhnhazdwopk.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Y2ZkdnBwdHFobmhhemR3b3BrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTU4MTQsImV4cCI6MjA5MzIzMTgxNH0.hl_WImS-FhczpMhqzZ8d8J2cMBnnLJxNXbLsu16tleQ';
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ADMIN_PASS = 'admin1234';
+let allData = [];
+
+function login() {
+  const val = document.getElementById('pass-input').value;
+  if(val === ADMIN_PASS) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    loadData();
+  } else {
+    document.getElementById('login-err').textContent = 'كلمة المرور غير صحيحة';
+  }
+}
+
+function logout() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('pass-input').value = '';
+}
+
+async function loadData() {
+  const { data, error } = await sbClient
+    .from('submissions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if(!error && data) {
+    allData = data;
+    renderTable();
+    updateStats();
+  }
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = allData.length;
+  const unique = new Set(allData.map(r => r.teacher_name));
+  document.getElementById('stat-teachers').textContent = unique.size;
+  const today = new Date().toDateString();
+  const todayCount = allData.filter(r => new Date(r.created_at).toDateString() === today).length;
+  document.getElementById('stat-today').textContent = todayCount;
+}
+
+function renderTable() {
+  const q = (document.getElementById('search').value || '').toLowerCase().trim();
+  const filtered = allData.filter(r =>
+    r.teacher_name.toLowerCase().includes(q) ||
+    r.subject.toLowerCase().includes(q)
+  );
+
+  const wrap = document.getElementById('table-wrap');
+  if(!filtered.length) {
+    wrap.innerHTML = '<div class="empty">لا توجد شواهد مرفوعة بعد</div>';
+    return;
+  }
+
+  const rows = filtered.map(r => {
+    const initials = r.teacher_name.split(' ').slice(0,2).map(w=>w[0]||'').join('');
+    const date = new Date(r.created_at).toLocaleDateString('ar-SA');
+    const time = new Date(r.created_at).toLocaleTimeString('ar-SA', {hour:'2-digit',minute:'2-digit'});
+    const ext = r.file_name.split('.').pop().toUpperCase().slice(0,5);
+    return `<tr>
+      <td><div class="name-cell"><div class="avatar">${initials}</div><span>${r.teacher_name}</span></div></td>
+      <td>${r.subject}</td>
+      <td style="font-size:12px;color:#888;">${r.file_name}</td>
+      <td><span style="background:#f0f4ff;color:#1a56a0;font-size:11px;padding:3px 8px;border-radius:5px;font-weight:500;">${ext}</span></td>
+      <td style="font-size:12px;color:#888;">${date}<br/>${time}</td>
+      <td><a href="${r.file_url}" target="_blank" download><button class="btn-dl">تحميل</button></a></td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th>اسم المعلم</th>
+      <th>المادة</th>
+      <th>اسم الملف</th>
+      <th>النوع</th>
+      <th>التاريخ</th>
+      <th>تحميل</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+</script>
+</body>
+</html>
