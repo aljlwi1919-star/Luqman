@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>رفع شواهد الأداء</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#f5f6fa;color:#222;direction:rtl;}
+  header{background:#1a56a0;color:#fff;padding:18px 24px;display:flex;align-items:center;gap:12px;}
+  header h1{font-size:20px;font-weight:600;}
+  header p{font-size:13px;opacity:.85;margin-top:2px;}
+  .container{max-width:560px;margin:40px auto;padding:0 16px;}
+  .card{background:#fff;border-radius:14px;border:1px solid #e3e6ef;padding:28px 32px;}
+  .card h2{font-size:17px;font-weight:600;margin-bottom:6px;color:#1a56a0;}
+  .card p{font-size:13px;color:#666;margin-bottom:22px;}
+  label{display:block;font-size:13px;color:#555;margin-bottom:5px;margin-top:14px;font-weight:500;}
+  input[type=text]{width:100%;padding:10px 14px;border-radius:8px;border:1px solid #d0d5e0;font-size:14px;font-family:inherit;direction:rtl;transition:border .2s;}
+  input[type=text]:focus{outline:none;border-color:#1a56a0;}
+  .upload-area{border:2px dashed #c0c8db;border-radius:10px;padding:28px 16px;text-align:center;cursor:pointer;margin-top:14px;transition:all .2s;background:#f9fafc;}
+  .upload-area:hover{border-color:#1a56a0;background:#eef3fb;}
+  .upload-area.has-file{border-color:#1a9a6a;background:#f0faf5;}
+  .upload-area p{font-size:13px;color:#888;margin-top:6px;}
+  .upload-area .icon{font-size:32px;margin-bottom:4px;}
+  .upload-area .file-name{font-size:13px;color:#1a9a6a;font-weight:500;margin-top:4px;}
+  input[type=file]{display:none;}
+  .btn{width:100%;margin-top:22px;padding:13px;border-radius:9px;border:none;background:#1a56a0;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .2s;}
+  .btn:hover{opacity:.88;}
+  .btn:disabled{opacity:.4;cursor:default;}
+  .success{display:none;background:#edfaf4;border:1px solid #6fcba0;border-radius:10px;padding:18px;text-align:center;margin-top:18px;}
+  .success .icon{font-size:32px;}
+  .success p{color:#1a7a4a;font-size:14px;margin-top:6px;font-weight:500;}
+  .error-msg{display:none;background:#fff0f0;border:1px solid #f0a0a0;border-radius:8px;padding:12px 16px;margin-top:14px;font-size:13px;color:#c0392b;}
+  .progress{display:none;margin-top:14px;}
+  .progress-bar{height:6px;background:#e0e6f0;border-radius:4px;overflow:hidden;}
+  .progress-fill{height:100%;background:#1a56a0;width:0%;transition:width .3s;border-radius:4px;}
+  .progress-text{font-size:12px;color:#888;margin-top:5px;text-align:center;}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>بوابة شواهد الأداء</h1>
+    <p>ارفع شاهد أدائك بسهولة</p>
+  </div>
+</header>
+<div class="container">
+  <div class="card">
+    <h2>رفع شاهد أداء</h2>
+    <p>أدخل بياناتك ثم ارفع الملف — سيصل مباشرة للمدير</p>
+
+    <label>الاسم الكامل</label>
+    <input type="text" id="teacher-name" placeholder="مثال: أحمد محمد العمري" oninput="checkForm()"/>
+
+    <label>المادة</label>
+    <input type="text" id="subject" placeholder="مثال: الرياضيات" oninput="checkForm()"/>
+
+    <label>الشاهد</label>
+    <div class="upload-area" id="drop-area" onclick="document.getElementById('file-input').click()">
+      <div class="icon">📎</div>
+      <strong style="font-size:14px;">اضغط لاختيار ملف</strong>
+      <p>أو اسحب الملف هنا — أي نوع مقبول</p>
+      <div class="file-name" id="file-name-display"></div>
+      <input type="file" id="file-input" onchange="fileChosen(this)"/>
+    </div>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-text" id="progress-text">جاري الرفع...</div>
+    </div>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <button class="btn" id="submit-btn" onclick="submitForm()" disabled>رفع الشاهد</button>
+
+    <div class="success" id="success">
+      <div class="icon">✅</div>
+      <p>تم رفع الشاهد بنجاح! شكراً لك.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://ozcfdvpptqhnhazdwopk.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Y2ZkdnBwdHFobmhhemR3b3BrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTU4MTQsImV4cCI6MjA5MzIzMTgxNH0.hl_WImS-FhczpMhqzZ8d8J2cMBnnLJxNXbLsu16tleQ';
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let selectedFile = null;
+
+function checkForm() {
+  const name = document.getElementById('teacher-name').value.trim();
+  const subject = document.getElementById('subject').value.trim();
+  document.getElementById('submit-btn').disabled = !(name && subject && selectedFile);
+}
+
+function fileChosen(inp) {
+  if(inp.files[0]) {
+    selectedFile = inp.files[0];
+    document.getElementById('file-name-display').textContent = selectedFile.name;
+    document.getElementById('drop-area').classList.add('has-file');
+    checkForm();
+  }
+}
+
+const dropArea = document.getElementById('drop-area');
+dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.borderColor='#1a56a0'; });
+dropArea.addEventListener('dragleave', () => { dropArea.style.borderColor=''; });
+dropArea.addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if(file) {
+    selectedFile = file;
+    document.getElementById('file-name-display').textContent = file.name;
+    dropArea.classList.add('has-file');
+    checkForm();
+  }
+});
+
+async function submitForm() {
+  const name = document.getElementById('teacher-name').value.trim();
+  const subject = document.getElementById('subject').value.trim();
+  const btn = document.getElementById('submit-btn');
+  const errorEl = document.getElementById('error-msg');
+  const progressEl = document.getElementById('progress');
+  const fillEl = document.getElementById('progress-fill');
+  const textEl = document.getElementById('progress-text');
+
+  btn.disabled = true;
+  errorEl.style.display = 'none';
+  progressEl.style.display = 'block';
+  fillEl.style.width = '20%';
+  textEl.textContent = 'جاري رفع الملف...';
+
+  try {
+    const ext = selectedFile.name.split('.').pop();
+    const fileName = `${Date.now()}_${name.replace(/\s+/g,'_')}.${ext}`;
+
+    fillEl.style.width = '50%';
+    const { data: storageData, error: storageError } = await sbClient.storage
+      .from('evidence')
+      .upload(fileName, selectedFile);
+
+    if(storageError) throw storageError;
+
+    fillEl.style.width = '75%';
+    textEl.textContent = 'جاري حفظ البيانات...';
+
+    const { data: urlData } = sbClient.storage.from('evidence').getPublicUrl(fileName);
+
+    const { error: dbError } = await sbClient.from('submissions').insert([{
+      teacher_name: name,
+      subject: subject,
+      file_name: selectedFile.name,
+      file_url: urlData.publicUrl
+    }]);
+
+    if(dbError) throw dbError;
+
+    fillEl.style.width = '100%';
+    textEl.textContent = 'تم بنجاح!';
+
+    setTimeout(() => {
+      progressEl.style.display = 'none';
+      document.getElementById('success').style.display = 'block';
+      document.getElementById('teacher-name').value = '';
+      document.getElementById('subject').value = '';
+      document.getElementById('file-name-display').textContent = '';
+      dropArea.classList.remove('has-file');
+      selectedFile = null;
+      fillEl.style.width = '0%';
+    }, 800);
+
+  } catch(err) {
+    progressEl.style.display = 'none';
+    errorEl.style.display = 'block';
+    errorEl.textContent = 'حدث خطأ: ' + (err.message || 'حاول مرة أخرى');
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
